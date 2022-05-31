@@ -222,33 +222,6 @@ export class Ec2VolModules extends Stack {
       },
         "mainSteps": [
           {
-            "action": "aws:runShellScript",
-              "name": "setEC2kernelversion",
-              "precondition": {
-                  "StringEquals": ["platformType", "Linux"]
-              },
-              "inputs": {
-                  "timeoutSeconds": "{{ ExecutionTimeout }}",
-                  "runCommand": [
-                    // Get Kernel OS version
-                    "kernel_release={{ kernelversion }}",
-                    // Prepare and Update EC2
-                    "sudo su",
-                    "#!/bin/bash",
-                    "cd /tmp",
-                    "sudo yum install $kernel_release -y",
-                    "sudo yum install git -y",
-                    "if [ `rpm -qa|grep awscli|wc -l` -eq 0 ]; then yum -y install awscli; fi",
-                    "if [ `lsmod|grep lime|wc -l` -gt 0 ]; then rmmod lime; fi",
-                    "yum install git -y",
-                    "yum install python -y",
-                    "curl -O https://bootstrap.pypa.io/pip/3.7/get-pip.py",
-                    "python get-pip.py",
-                    "        exit 194"
-                  ]
-                }
-          },
-          {
               "action": "aws:runShellScript",
               "name": "createEC2kernelversion",
               "precondition": {
@@ -257,8 +230,20 @@ export class Ec2VolModules extends Stack {
               "inputs": {
                   "timeoutSeconds": "{{ ExecutionTimeout }}",
                   "runCommand": [
+                    // Get Kernel OS version
+                      "kernel_release={{ kernelversion }}",
+                    // Prepare and Update EC2
                       "sudo su",
                       "#!/bin/bash",
+                      "cd /tmp",
+                      "sudo yum install $kernel_release -y",
+                      "sudo yum install git -y",
+                      "if [ `rpm -qa|grep awscli|wc -l` -eq 0 ]; then yum -y install awscli; fi",
+                      "if [ `lsmod|grep lime|wc -l` -gt 0 ]; then rmmod lime; fi",
+                      "yum install git -y",
+                      "yum install python -y",
+                      "curl -O https://bootstrap.pypa.io/pip/3.7/get-pip.py",
+                      "python get-pip.py",
                     // Dependencies for Volatility2
                       "pip install pycrypto",
                       "pip install distorm3",
