@@ -53,8 +53,8 @@ Once you have deployed the solution, you can build modules by leveraging the Ste
 3. Start an execution and pass the following:
 
     {
-    "AMI_ID": "INSERT AMI ID",
-    "kernelversion":"INSERT KERNEL VERSION"
+    "AMI_ID": "<INSERT AMI-ID>",
+    "kernelversion": "<INSERT KERNEL VERSION>"
     }
 
 Example values:
