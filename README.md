@@ -27,10 +27,6 @@ Supported OS:
 
 To build this app, you need to be in the project root folder. Then run the following:
 
-npm install -g aws-cdk
-npm install
-npm run build
-
     $ npm install -g aws-cdk
     <installs AWS CDK>
 
@@ -47,6 +43,26 @@ npm run build
 
     $ cdk deploy
     <deploys the cdk project into the authenticated AWS account>
+
+## How to Use
+
+Once you have deployed the solution, you can build modules by leveraging the Step Function.
+
+1. Go to the AWS account where the solution was deployed
+2. Select the step function `create_ec2_volatile_memory_modules`
+3. Start an execution and pass the following:
+    {
+    "AMI_ID": "<INSERT AMI ID>",
+    "kernelversion":"<INSERT KERNEL VERSION>"
+    }
+
+Example values:
+    {
+    "AMI_ID": "ami-0022f774911c1d690",
+    "kernelversion":"kernel-4.14.104-95.84.amzn2.x86_64"
+    }
+
+Note: kernelversion is optional and only required if you are trying to build modules for a specific kernel version. If no value is provided, the default kernel version on the AMI-ID will be utilized.
 
 ## CDK Toolkit
 
