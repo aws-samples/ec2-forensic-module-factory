@@ -185,7 +185,7 @@ export class Ec2VolModules extends Stack {
 
 
     // SSM Document for EC2 Module Creation
-    const ssm_document_name = 'ec2_forensic_module_build-2'
+    const ssm_document_name = 'ec2_forensic_module_build-1'
     const ec2_module_document = new CfnDocument(this, 'ec2_module_document', {
       documentType: 'Command',
       name: ssm_document_name,
@@ -199,7 +199,8 @@ export class Ec2VolModules extends Stack {
           },
           "kernelversion": {
             "type": "String",
-            "description": "(Required) Kernel version to create modules for."
+            "description": "(Required) Kernel version to create modules for.",
+            "default": "uname -r"
         },
           "ExecutionTimeout": {
               "type": "String",
@@ -231,7 +232,7 @@ export class Ec2VolModules extends Stack {
                   "timeoutSeconds": "{{ ExecutionTimeout }}",
                   "runCommand": [
                     // Get Kernel OS version
-                      "kernel_release={{ kernelversion }}",
+                    "kernel_release={{ kernelversion }}",
                     // Prepare and Update EC2
                       "sudo su",
                       "#!/bin/bash",
@@ -244,6 +245,14 @@ export class Ec2VolModules extends Stack {
                       "yum install python -y",
                       "curl -O https://bootstrap.pypa.io/pip/3.7/get-pip.py",
                       "python get-pip.py",
+                    // Restart node if required
+                      "needs-restarting -r",
+                      "if [ $? -eq 1 ]",
+                      "then",
+                      "        exit 194",
+                      "else",
+                      "        uname -r",
+                      "fi",
                     // Dependencies for Volatility2
                       "pip install pycrypto",
                       "pip install distorm3",

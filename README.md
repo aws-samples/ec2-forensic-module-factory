@@ -51,7 +51,6 @@ Once you have deployed the solution, you can build modules by leveraging the Ste
 1. Go to the AWS account where the solution was deployed
 2. Select the step function `create_ec2_volatile_memory_modules`
 3. Start an execution and pass the following:
-
     {
     "AMI_ID": "INSERT AMI-ID",
     "kernelversion": "INSERT KERNEL VERSION"
