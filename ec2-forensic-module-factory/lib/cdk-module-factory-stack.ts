@@ -233,20 +233,13 @@ export class Ec2VolModules extends Stack {
                   "runCommand": [
                     // Get Kernel OS version
                       "kernel_release={{ kernelversion }}",
-                      "sudo su",
                       "#!/bin/bash",
                       "sudo yum install $kernel_release -y",
                     // Restart node if required
-                      "needs-restarting -r",
-                      "if [ $? -eq 1 ]",
-                      "then",
-                      "        exit 194",
-                      "else",
-                      "        echo $kernel_release will be used to create modules.",
-                      "fi",
+                      "needs-restarting  -r",
+                      "if [ $? -eq 1 ]; then exit 194; fi",
                     // Prepare and Update EC2
                       "kernel_release={{ kernelversion }}",
-                      "sudo su",
                       "#!/bin/bash",
                       "cd /tmp",
                       "sudo yum install git -y",
@@ -254,14 +247,10 @@ export class Ec2VolModules extends Stack {
                       "if [ `lsmod|grep lime|wc -l` -gt 0 ]; then rmmod lime; fi",
                       "yum install git -y",
                       "yum install python3 -y",
-                      //"curl -O https://bootstrap.pypa.io/pip/3.6/get-pip.py",
                       "yum install pip -y",
-                      //"python3 get-pip.py",
                     // Dependencies for Volatility2
-                      "sudo su",
                       "sudo pip install pycrypto",
                       "sudo pip install distorm3",
-                      "echo $kernel_release",
                       "sudo yum install kernel-devel-$kernel_release -y",
                       "sudo yum install gcc -y",
                       "sudo yum install libdwarf-tools -y",                  
@@ -278,7 +267,8 @@ export class Ec2VolModules extends Stack {
                     // Volatility profile creation
                       "git clone https://github.com/volatilityfoundation/volatility.git",
                       "cd volatility/tools/linux",
-                      "sudo make",
+                      "sudo su",
+                      "make",
                       "sudo zip /tmp/volatility/volatility/plugins/overlays/linux/$kernel_release.zip /tmp/volatility/tools/linux/module.dwarf /boot/System.map-$kernel_release",
                       "aws s3 cp /tmp/volatility/volatility/plugins/overlays/linux/$kernel_release.zip s3://{{ s3bucket }}/tools/vol2/",
                       "echo Volatility2 profile creation completed for $kernel_release",
@@ -291,7 +281,6 @@ export class Ec2VolModules extends Stack {
                       '}',
                       'EOF',
                       'aws stepfunctions send-task-success --cli-input-json file://ec2_module_steptoken.json --region {{ Region }}',                      
-                      "exit 0;"
                   ]
               }
           }
