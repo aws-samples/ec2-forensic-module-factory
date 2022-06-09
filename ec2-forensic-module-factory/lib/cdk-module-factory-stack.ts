@@ -185,7 +185,7 @@ export class Ec2VolModules extends Stack {
 
 
     // SSM Document for EC2 Module Creation
-    const ssm_document_name = 'ec2_forensic_module_build-2'
+    const ssm_document_name = 'ec2_forensic_module_build-1'
     const ec2_module_document = new CfnDocument(this, 'ec2_module_document', {
       documentType: 'Command',
       name: ssm_document_name,
@@ -238,6 +238,7 @@ export class Ec2VolModules extends Stack {
                     // Restart node if required
                       "needs-restarting  -r",
                       "if [ $? -eq 1 ]; then exit 194; fi",
+                      "sleep 120",
                     // Prepare and Update EC2
                       "kernel_release={{ kernelversion }}",
                       "#!/bin/bash",
@@ -251,9 +252,9 @@ export class Ec2VolModules extends Stack {
                     // Dependencies for Volatility2
                       "sudo pip install pycrypto",
                       "sudo pip install distorm3",
-                      "sudo yum install kernel-devel-$kernel_release -y",
                       "sudo yum install gcc -y",
-                      "sudo yum install libdwarf-tools -y",                  
+                      "sudo yum install libdwarf-tools -y",        
+                      "sudo yum install kernel-devel-4.14.104-95.84.amzn2.x86_64 -y",          
                     // LiME module creation
                       "git clone https://github.com/504ensicsLabs/LiME",
                       "sudo zip -r LiME.zip LiME",
@@ -261,13 +262,14 @@ export class Ec2VolModules extends Stack {
                       "cd src",
                       "sudo make",
                       "aws configure set default.s3.max_concurrent_requests 20",
-                      "aws s3 cp lime-$kernel_release.ko s3://{{ s3bucket }}/tools/LiME/",
+                      "aws s3 cp /tmp/LiME/src/lime-$kernel_release.ko s3://{{ s3bucket }}/tools/LiME/",
                       "echo LiME module creation completed for $kernel_release",
                       "cd /tmp",
                     // Volatility profile creation
                       "git clone https://github.com/volatilityfoundation/volatility.git",
                       "cd volatility/tools/linux",
                       "sudo su",
+                      "sudo sed -i 's/PWD/shell pwd/g' /tmp/volatility/tools/linux/Makefile",
                       "make",
                       "sudo zip /tmp/volatility/volatility/plugins/overlays/linux/$kernel_release.zip /tmp/volatility/tools/linux/module.dwarf /boot/System.map-$kernel_release",
                       "aws s3 cp /tmp/volatility/volatility/plugins/overlays/linux/$kernel_release.zip s3://{{ s3bucket }}/tools/vol2/",
