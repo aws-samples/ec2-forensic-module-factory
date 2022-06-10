@@ -240,7 +240,7 @@ export class Ec2VolModules extends Stack {
                       "if [ $? -eq 1 ]; then exit 194; fi",
                       "sleep 120",
                     // Prepare and Update EC2
-                      "kernel_release={{ kernelversion }}",
+                      "kernel_release=$(uname -r)",
                       "#!/bin/bash",
                       "cd /tmp",
                       "sudo yum install git -y",
@@ -254,7 +254,8 @@ export class Ec2VolModules extends Stack {
                       "sudo pip install distorm3",
                       "sudo yum install gcc -y",
                       "sudo yum install libdwarf-tools -y",        
-                      "sudo yum install kernel-devel-4.14.104-95.84.amzn2.x86_64 -y",          
+                      //"sudo yum install kernel-devel-4.14.104-95.84.amzn2.x86_64 -y",          
+                      "sudo yum install kernel-devel-$kernel_release -y",          
                     // LiME module creation
                       "git clone https://github.com/504ensicsLabs/LiME",
                       "sudo zip -r LiME.zip LiME",
