@@ -53,7 +53,7 @@ def check_ec2_instance(InstanceId):
         )
     if response['InstanceStatuses'][0]['SystemStatus']['Status'] == 'ok':
         logger.info("Instance is ready to run SSM command!")
-        time.sleep(5)
+        time.sleep(10)
         return True
     else:
         logger.info("Instance {} is {}...".format(InstanceId, response['InstanceStatuses'][0]['SystemStatus']['Status']))

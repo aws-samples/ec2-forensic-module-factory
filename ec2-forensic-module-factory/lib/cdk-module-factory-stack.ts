@@ -305,7 +305,7 @@ export class Ec2VolModules extends Stack {
       assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
       roleName: "EC2InstanceRole",
       managedPolicies: [
-        iam.ManagedPolicy.fromManagedPolicyArn(this, 'lambdaEC2InstanceExecutionPolicy', 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole')
+        iam.ManagedPolicy.fromManagedPolicyArn(this, 'EC2InstanceExecutionPolicy', 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore')
       ]
     });
 
