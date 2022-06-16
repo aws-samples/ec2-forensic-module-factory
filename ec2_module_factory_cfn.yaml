@@ -1,0 +1,1162 @@
+Resources:
+  s3kmskeyA0E45BCB:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Statement:
+          - Action: kms:*
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::Join:
+                  - ""
+                  - - "arn:"
+                    - Ref: AWS::Partition
+                    - ":iam::"
+                    - Ref: AWS::AccountId
+                    - :root
+            Resource: "*"
+        Version: "2012-10-17"
+      Description: KMS key for modules in S3 bucket.
+      EnableKeyRotation: true
+      PendingWindowInDays: 7
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: Ec2VolModules/s3_kms_key/Resource
+  s3kmskeyAlias2C7CE359:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/ec2_module_key
+      TargetKeyId:
+        Fn::GetAtt:
+          - s3kmskeyA0E45BCB
+          - Arn
+    Metadata:
+      aws:cdk:path: Ec2VolModules/s3_kms_key/Alias/Resource
+  cwkmskey93A5BD85:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Statement:
+          - Action: kms:*
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::Join:
+                  - ""
+                  - - "arn:"
+                    - Ref: AWS::Partition
+                    - ":iam::"
+                    - Ref: AWS::AccountId
+                    - :root
+            Resource: "*"
+        Version: "2012-10-17"
+      Description: KMS key for cloudwatch logs.
+      EnableKeyRotation: true
+      PendingWindowInDays: 7
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: Ec2VolModules/cw_kms_key/Resource
+  cwkmskeyAlias876FFF55:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/cloudwatch_key
+      TargetKeyId:
+        Fn::GetAtt:
+          - cwkmskey93A5BD85
+          - Arn
+    Metadata:
+      aws:cdk:path: Ec2VolModules/cw_kms_key/Alias/Resource
+  cwflowlogs3E4CC8F1:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Ref: cwflowlogsparameter
+      RetentionInDays: 365
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: Ec2VolModules/cw_flow_logs/Resource
+  ec2automationvpc1FBDAD0F:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/Resource
+  ec2automationvpcmaintenancepublicsubnetSubnet1SubnetF7E379E7:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.0.0/28
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: maintenance_public_subnet
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet1
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet1/Subnet
+  ec2automationvpcmaintenancepublicsubnetSubnet1RouteTable14F3ED05:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      Tags:
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet1
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet1/RouteTable
+  ec2automationvpcmaintenancepublicsubnetSubnet1RouteTableAssociation88547FAA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: ec2automationvpcmaintenancepublicsubnetSubnet1RouteTable14F3ED05
+      SubnetId:
+        Ref: ec2automationvpcmaintenancepublicsubnetSubnet1SubnetF7E379E7
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet1/RouteTableAssociation
+  ec2automationvpcmaintenancepublicsubnetSubnet1DefaultRouteFCF33494:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: ec2automationvpcmaintenancepublicsubnetSubnet1RouteTable14F3ED05
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: ec2automationvpcIGW8811C2DD
+    DependsOn:
+      - ec2automationvpcVPCGW6E29E492
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet1/DefaultRoute
+  ec2automationvpcmaintenancepublicsubnetSubnet1EIPD360483A:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet1
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet1/EIP
+  ec2automationvpcmaintenancepublicsubnetSubnet1NATGatewayC8A8D698:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId:
+        Ref: ec2automationvpcmaintenancepublicsubnetSubnet1SubnetF7E379E7
+      AllocationId:
+        Fn::GetAtt:
+          - ec2automationvpcmaintenancepublicsubnetSubnet1EIPD360483A
+          - AllocationId
+      Tags:
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet1
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet1/NATGateway
+  ec2automationvpcmaintenancepublicsubnetSubnet2Subnet79F85D7F:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.0.16/28
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: maintenance_public_subnet
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet2
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet2/Subnet
+  ec2automationvpcmaintenancepublicsubnetSubnet2RouteTable012F3241:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      Tags:
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet2
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet2/RouteTable
+  ec2automationvpcmaintenancepublicsubnetSubnet2RouteTableAssociation54D1CB95:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: ec2automationvpcmaintenancepublicsubnetSubnet2RouteTable012F3241
+      SubnetId:
+        Ref: ec2automationvpcmaintenancepublicsubnetSubnet2Subnet79F85D7F
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet2/RouteTableAssociation
+  ec2automationvpcmaintenancepublicsubnetSubnet2DefaultRouteD17540CF:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: ec2automationvpcmaintenancepublicsubnetSubnet2RouteTable012F3241
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: ec2automationvpcIGW8811C2DD
+    DependsOn:
+      - ec2automationvpcVPCGW6E29E492
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_public_subnetSubnet2/DefaultRoute
+  ec2automationvpcmaintenanceprivateisosubnetSubnet1Subnet1AC4B88B:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.0.32/28
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: maintenance_private_iso_subnet
+        - Key: aws-cdk:subnet-type
+          Value: Isolated
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_private_iso_subnetSubnet1
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_iso_subnetSubnet1/Subnet
+  ec2automationvpcmaintenanceprivateisosubnetSubnet1RouteTable79E194B0:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      Tags:
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_private_iso_subnetSubnet1
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_iso_subnetSubnet1/RouteTable
+  ec2automationvpcmaintenanceprivateisosubnetSubnet1RouteTableAssociationB0CEBDE1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: ec2automationvpcmaintenanceprivateisosubnetSubnet1RouteTable79E194B0
+      SubnetId:
+        Ref: ec2automationvpcmaintenanceprivateisosubnetSubnet1Subnet1AC4B88B
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_iso_subnetSubnet1/RouteTableAssociation
+  ec2automationvpcmaintenanceprivateisosubnetSubnet2Subnet3EEE2CC1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.0.48/28
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: maintenance_private_iso_subnet
+        - Key: aws-cdk:subnet-type
+          Value: Isolated
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_private_iso_subnetSubnet2
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_iso_subnetSubnet2/Subnet
+  ec2automationvpcmaintenanceprivateisosubnetSubnet2RouteTableA904DA81:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      Tags:
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_private_iso_subnetSubnet2
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_iso_subnetSubnet2/RouteTable
+  ec2automationvpcmaintenanceprivateisosubnetSubnet2RouteTableAssociation9F48803B:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: ec2automationvpcmaintenanceprivateisosubnetSubnet2RouteTableA904DA81
+      SubnetId:
+        Ref: ec2automationvpcmaintenanceprivateisosubnetSubnet2Subnet3EEE2CC1
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_iso_subnetSubnet2/RouteTableAssociation
+  ec2automationvpcmaintenanceprivatenatsubnetSubnet1SubnetD2177F82:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: maintenance_private_nat_subnet
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_private_nat_subnetSubnet1
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_nat_subnetSubnet1/Subnet
+  ec2automationvpcmaintenanceprivatenatsubnetSubnet1RouteTable3DA99E18:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      Tags:
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_private_nat_subnetSubnet1
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_nat_subnetSubnet1/RouteTable
+  ec2automationvpcmaintenanceprivatenatsubnetSubnet1RouteTableAssociation7525701D:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet1RouteTable3DA99E18
+      SubnetId:
+        Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet1SubnetD2177F82
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_nat_subnetSubnet1/RouteTableAssociation
+  ec2automationvpcmaintenanceprivatenatsubnetSubnet1DefaultRouteEACA809F:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet1RouteTable3DA99E18
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: ec2automationvpcmaintenancepublicsubnetSubnet1NATGatewayC8A8D698
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_nat_subnetSubnet1/DefaultRoute
+  ec2automationvpcmaintenanceprivatenatsubnetSubnet2Subnet7DE7F680:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: maintenance_private_nat_subnet
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_private_nat_subnetSubnet2
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_nat_subnetSubnet2/Subnet
+  ec2automationvpcmaintenanceprivatenatsubnetSubnet2RouteTable4F1A1960:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      Tags:
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc/maintenance_private_nat_subnetSubnet2
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_nat_subnetSubnet2/RouteTable
+  ec2automationvpcmaintenanceprivatenatsubnetSubnet2RouteTableAssociation52502E65:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet2RouteTable4F1A1960
+      SubnetId:
+        Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet2Subnet7DE7F680
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_nat_subnetSubnet2/RouteTableAssociation
+  ec2automationvpcmaintenanceprivatenatsubnetSubnet2DefaultRoute1D2B1B5B:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet2RouteTable4F1A1960
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: ec2automationvpcmaintenancepublicsubnetSubnet1NATGatewayC8A8D698
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/maintenance_private_nat_subnetSubnet2/DefaultRoute
+  ec2automationvpcIGW8811C2DD:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/IGW
+  ec2automationvpcVPCGW6E29E492:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      InternetGatewayId:
+        Ref: ec2automationvpcIGW8811C2DD
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/VPCGW
+  ec2automationvpcs3IAMRole13C7C10B:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: vpc-flow-logs.amazonaws.com
+        Version: "2012-10-17"
+      Tags:
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/s3/IAMRole/Resource
+  ec2automationvpcs3IAMRoleDefaultPolicy39F32956:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - logs:CreateLogStream
+              - logs:DescribeLogStreams
+              - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - cwflowlogs3E4CC8F1
+                - Arn
+          - Action: iam:PassRole
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - ec2automationvpcs3IAMRole13C7C10B
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: ec2automationvpcs3IAMRoleDefaultPolicy39F32956
+      Roles:
+        - Ref: ec2automationvpcs3IAMRole13C7C10B
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/s3/IAMRole/DefaultPolicy/Resource
+  ec2automationvpcs3FlowLog1619FF8E:
+    Type: AWS::EC2::FlowLog
+    Properties:
+      ResourceId:
+        Ref: ec2automationvpc1FBDAD0F
+      ResourceType: VPC
+      TrafficType: ALL
+      DeliverLogsPermissionArn:
+        Fn::GetAtt:
+          - ec2automationvpcs3IAMRole13C7C10B
+          - Arn
+      LogDestinationType: cloud-watch-logs
+      LogGroupName:
+        Ref: cwflowlogs3E4CC8F1
+      Tags:
+        - Key: Name
+          Value: Ec2VolModules/ec2_automation_vpc
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/s3/FlowLog
+  ec2automationvpcec2endpointF2D2A4DF:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName:
+        Fn::Join:
+          - ""
+          - - com.amazonaws.
+            - Ref: AWS::Region
+            - .ec2
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - Fn::GetAtt:
+            - ec2workloadsgBC9C5D76
+            - GroupId
+      SubnetIds:
+        - Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet1SubnetD2177F82
+      VpcEndpointType: Interface
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/ec2_endpoint/Resource
+  ec2automationvpcec2msgendpoint41B4BAD2:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName:
+        Fn::Join:
+          - ""
+          - - com.amazonaws.
+            - Ref: AWS::Region
+            - .ec2messages
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - Fn::GetAtt:
+            - ec2workloadsgBC9C5D76
+            - GroupId
+      SubnetIds:
+        - Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet1SubnetD2177F82
+      VpcEndpointType: Interface
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/ec2_msg_endpoint/Resource
+  ec2automationvpckmsendpoint0632CD1E:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName:
+        Fn::Join:
+          - ""
+          - - com.amazonaws.
+            - Ref: AWS::Region
+            - .kms
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - Fn::GetAtt:
+            - ec2workloadsgBC9C5D76
+            - GroupId
+      SubnetIds:
+        - Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet1SubnetD2177F82
+      VpcEndpointType: Interface
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/kms_endpoint/Resource
+  ec2automationvpcssmendpoint388EB56F:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName:
+        Fn::Join:
+          - ""
+          - - com.amazonaws.
+            - Ref: AWS::Region
+            - .ssm
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - Fn::GetAtt:
+            - ec2workloadsgBC9C5D76
+            - GroupId
+      SubnetIds:
+        - Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet1SubnetD2177F82
+      VpcEndpointType: Interface
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/ssm_endpoint/Resource
+  ec2automationvpcssmmsgendpoint6EBFF5FD:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName:
+        Fn::Join:
+          - ""
+          - - com.amazonaws.
+            - Ref: AWS::Region
+            - .ssmmessages
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - Fn::GetAtt:
+            - ec2workloadsgBC9C5D76
+            - GroupId
+      SubnetIds:
+        - Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet1SubnetD2177F82
+      VpcEndpointType: Interface
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/ssm_msg_endpoint/Resource
+  ec2automationvpcs3endpoint3A12DAA7:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: com.amazonaws.us-east-1.s3
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+      PrivateDnsEnabled: false
+      SecurityGroupIds:
+        - Fn::GetAtt:
+            - ec2workloadsgBC9C5D76
+            - GroupId
+      SubnetIds:
+        - Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet1SubnetD2177F82
+      VpcEndpointType: Interface
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_automation_vpc/s3_endpoint/Resource
+  ec2workloadsgBC9C5D76:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Lambda Workload SG
+      GroupName: ec2_workload_sg
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow HTTPS Outbound for Egress internet connectivity
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      SecurityGroupIngress:
+        - CidrIp:
+            Fn::GetAtt:
+              - ec2automationvpc1FBDAD0F
+              - CidrBlock
+          Description:
+            Fn::Join:
+              - ""
+              - - "from "
+                - Fn::GetAtt:
+                    - ec2automationvpc1FBDAD0F
+                    - CidrBlock
+                - :443
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      VpcId:
+        Ref: ec2automationvpc1FBDAD0F
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_workload_sg/Resource
+  ec2workloadsgtoEc2VolModulesec2workloadsgC926AE4D443A708B60C:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId:
+        Fn::GetAtt:
+          - ec2workloadsgBC9C5D76
+          - GroupId
+      IpProtocol: tcp
+      Description: Allow HTTPS Outbound for PrivateLink
+      DestinationSecurityGroupId:
+        Fn::GetAtt:
+          - ec2workloadsgBC9C5D76
+          - GroupId
+      FromPort: 443
+      ToPort: 443
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_workload_sg/to Ec2VolModulesec2workloadsgC926AE4D:443
+  ec2workloadsgfromEc2VolModulesec2workloadsgC926AE4D4439012446D:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      Description: Allow HTTPS Inbound for PrivateLink
+      FromPort: 443
+      GroupId:
+        Fn::GetAtt:
+          - ec2workloadsgBC9C5D76
+          - GroupId
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+          - ec2workloadsgBC9C5D76
+          - GroupId
+      ToPort: 443
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_workload_sg/from Ec2VolModulesec2workloadsgC926AE4D:443
+  ec2modulebucketEF78C218:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              KMSMasterKeyID:
+                Fn::GetAtt:
+                  - s3kmskeyA0E45BCB
+                  - Arn
+              SSEAlgorithm: aws:kms
+      LifecycleConfiguration:
+        Rules:
+          - ExpirationInDays: 365
+            Status: Enabled
+            Transitions:
+              - StorageClass: GLACIER
+                TransitionInDays: 31
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_module_bucket/Resource
+  ec2modulebucketPolicy3EA608C5:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: ec2modulebucketEF78C218
+      PolicyDocument:
+        Statement:
+          - Action: s3:*
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+            Effect: Deny
+            Principal:
+              AWS: "*"
+            Resource:
+              - Fn::GetAtt:
+                  - ec2modulebucketEF78C218
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - ec2modulebucketEF78C218
+                        - Arn
+                    - /*
+          - Action:
+              - s3:GetObject*
+              - s3:ListBucket
+              - s3:PutObject*
+            Effect: Allow
+            Principal:
+              AWS:
+                - Fn::GetAtt:
+                    - ec2instancemodulerole43B94AC9
+                    - Arn
+                - Fn::GetAtt:
+                    - lambdacreateec2modulerole5B4A6B11
+                    - Arn
+            Resource:
+              - Fn::GetAtt:
+                  - ec2modulebucketEF78C218
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - ec2modulebucketEF78C218
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_module_bucket/Policy/Resource
+  ec2moduledocument:
+    Type: AWS::SSM::Document
+    Properties:
+      Content:
+        schemaVersion: "2.2"
+        description: Create modules for EC2 forensics and investigation.
+        parameters:
+          s3bucket:
+            type: String
+            description: (Required) S3 bucket details where modules are copied.
+          kernelversion:
+            type: String
+            description: (Required) Kernel version to create modules for.
+            default: uname -r
+          ExecutionTimeout:
+            type: String
+            description: (Required) SSM document execution timeout(seconds)
+            default: "4000"
+          Region:
+            type: String
+            description: (Required) Region where automation for module build occurs.
+            default: us-east-1
+          EC2InstanceId:
+            type: String
+            description: (Required) EC2 instance where module build occurs.
+          TaskToken:
+            type: String
+            description: (Required) TaskToken from Step Function to complete task.
+        mainSteps:
+          - action: aws:runShellScript
+            name: createEC2kernelversion
+            precondition:
+              StringEquals:
+                - platformType
+                - Linux
+            inputs:
+              timeoutSeconds: "{{ ExecutionTimeout }}"
+              runCommand:
+                - kernel_release={{ kernelversion }}
+                - "#!/bin/bash"
+                - sudo yum install $kernel_release -y
+                - needs-restarting  -r
+                - if [ $? -eq 1 ]; then exit 194; fi
+                - sleep 120
+                - kernel_release=$(uname -r)
+                - "#!/bin/bash"
+                - cd /tmp
+                - sudo yum install git -y
+                - if [ `rpm -qa|grep awscli|wc -l` -eq 0 ]; then yum -y install awscli; fi
+                - if [ `lsmod|grep lime|wc -l` -gt 0 ]; then rmmod lime; fi
+                - yum install git -y
+                - yum install python3 -y
+                - yum install pip -y
+                - sudo pip install pycrypto
+                - sudo pip install distorm3
+                - sudo yum install gcc -y
+                - sudo yum install libdwarf-tools -y
+                - sudo yum install kernel-devel-$kernel_release -y
+                - git clone https://github.com/504ensicsLabs/LiME
+                - sudo zip -r LiME.zip LiME
+                - cd LiME
+                - cd src
+                - sudo make
+                - aws configure set default.s3.max_concurrent_requests 20
+                - aws s3 cp /tmp/LiME/src/lime-$kernel_release.ko s3://{{ s3bucket }}/tools/LiME/
+                - echo LiME module creation completed for $kernel_release
+                - cd /tmp
+                - git clone https://github.com/volatilityfoundation/volatility.git
+                - cd volatility/tools/linux
+                - sudo su
+                - sudo sed -i 's/PWD/shell pwd/g' /tmp/volatility/tools/linux/Makefile
+                - make
+                - sudo zip /tmp/volatility/volatility/plugins/overlays/linux/$kernel_release.zip /tmp/volatility/tools/linux/module.dwarf /boot/System.map-$kernel_release
+                - aws s3 cp /tmp/volatility/volatility/plugins/overlays/linux/$kernel_release.zip s3://{{ s3bucket }}/tools/vol2/
+                - echo Volatility2 profile creation completed for $kernel_release
+                - ls -ltr
+                - cat <<EOF >> ec2_module_steptoken.json
+                - "{"
+                - '"taskToken":"{{ TaskToken }}",'
+                - '"output":"{\"InstanceId\": \"{{ EC2InstanceId }}\"}"'
+                - "}"
+                - EOF
+                - aws stepfunctions send-task-success --cli-input-json file://ec2_module_steptoken.json --region {{ Region }}
+      DocumentType: Command
+      Name: ec2_forensic_module_build-1
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_module_document
+  lambdacreateec2modulerole5B4A6B11:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      RoleName: LambdaEC2ModuleCreationRole
+    Metadata:
+      aws:cdk:path: Ec2VolModules/lambda_create_ec2_module_role/Resource
+  ec2instancemodulerole43B94AC9:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                Fn::Join:
+                  - ""
+                  - - ec2.
+                    - Ref: AWS::URLSuffix
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      RoleName: EC2InstanceRole
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_instance_module_role/Resource
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - Ref: ec2instancemodulerole43B94AC9
+      InstanceProfileName: EC2InstanceProfile
+    Metadata:
+      aws:cdk:path: Ec2VolModules/EC2InstanceProfile
+  EC2CreateModuleManagedPolicy63CA4A4D:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - kms:Decrypt
+              - kms:Describe*
+              - kms:Encrypt
+              - kms:GenerateDataKey
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - s3kmskeyA0E45BCB
+                - Arn
+            Sid: KMSUse
+          - Action:
+              - ec2:CreateNetworkInterface
+              - ec2:DeleteNetworkInterface
+              - ec2:DescribeNetworkInterfaces
+            Effect: Allow
+            Resource: "*"
+            Sid: EC2Allow
+          - Action: states:SendTaskSuccess
+            Effect: Allow
+            Resource: "*"
+            Sid: StepFunctionAllow
+        Version: "2012-10-17"
+      Description: EC2 Volatile Memory module instance profile.
+      ManagedPolicyName: EC2ModuleInstanceManagedPolicy
+      Path: /
+      Roles:
+        - Ref: ec2instancemodulerole43B94AC9
+    Metadata:
+      aws:cdk:path: Ec2VolModules/EC2CreateModuleManagedPolicy/Resource
+  createec2modulefunctionA90782EF:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Ref: LambdaCodeSourceS3Bucket
+        S3Key:
+          Ref: CreateEC2ModuleFunctionKey
+      Role:
+        Fn::GetAtt:
+          - lambdacreateec2modulerole5B4A6B11
+          - Arn
+      Description: Creates EC2 volatile memory modules for forensics.
+      Environment:
+        Variables:
+          S3_BUCKET:
+            Ref: ec2modulebucketEF78C218
+          KMS_KEY_ID:
+            Fn::GetAtt:
+              - s3kmskeyA0E45BCB
+              - Arn
+          SECURITY_GROUP_ID:
+            Fn::GetAtt:
+              - ec2workloadsgBC9C5D76
+              - GroupId
+          SUBNET_ID:
+            Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet1SubnetD2177F82
+          INSTANCE_PROFILE:
+            Fn::GetAtt:
+              - EC2InstanceProfile
+              - Arn
+          REGION:
+            Ref: AWS::Region
+          SSM_DOC: ec2_forensic_module_build-1
+      Handler: create_modules.lambda_handler
+      MemorySize: 1024
+      ReservedConcurrentExecutions: 20
+      Runtime: python3.8
+      Timeout: 900
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::GetAtt:
+              - ec2workloadsgBC9C5D76
+              - GroupId
+        SubnetIds:
+          - Ref: ec2automationvpcmaintenanceprivateisosubnetSubnet1Subnet1AC4B88B
+          - Ref: ec2automationvpcmaintenanceprivateisosubnetSubnet2Subnet3EEE2CC1
+    DependsOn:
+      - lambdacreateec2modulerole5B4A6B11
+    Metadata:
+      aws:cdk:path: Ec2VolModules/create_ec2_module_function/Resource
+      aws:asset:path: asset.1455cd191351462b4a56796a6e0fa23a1dc8bae4023f12b42a2ea8f09a36a691
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  cleanupec2modulefunction8CAD29D4:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Ref: LambdaCodeSourceS3Bucket
+        S3Key:
+          Ref: CleanupEC2ResourceFunction
+      Role:
+        Fn::GetAtt:
+          - lambdacreateec2modulerole5B4A6B11
+          - Arn
+      Description: Deletes EC2 instance after memory modules for forensics are.
+      Environment:
+        Variables:
+          S3_BUCKET:
+            Ref: ec2modulebucketEF78C218
+          KMS_KEY_ID:
+            Fn::GetAtt:
+              - s3kmskeyA0E45BCB
+              - Arn
+          SECURITY_GROUP_ID:
+            Fn::GetAtt:
+              - ec2workloadsgBC9C5D76
+              - GroupId
+          SUBNET_ID:
+            Ref: ec2automationvpcmaintenanceprivatenatsubnetSubnet1SubnetD2177F82
+          INSTANCE_PROFILE:
+            Fn::GetAtt:
+              - EC2InstanceProfile
+              - Arn
+          REGION:
+            Ref: AWS::Region
+          SSM_DOC: ec2_forensic_module_build-1
+      Handler: cleanup.lambda_handler
+      MemorySize: 1024
+      ReservedConcurrentExecutions: 20
+      Runtime: python3.8
+      Timeout: 900
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::GetAtt:
+              - ec2workloadsgBC9C5D76
+              - GroupId
+        SubnetIds:
+          - Ref: ec2automationvpcmaintenanceprivateisosubnetSubnet1Subnet1AC4B88B
+          - Ref: ec2automationvpcmaintenanceprivateisosubnetSubnet2Subnet3EEE2CC1
+    DependsOn:
+      - lambdacreateec2modulerole5B4A6B11
+    Metadata:
+      aws:cdk:path: Ec2VolModules/cleanup_ec2_module_function/Resource
+      aws:asset:path: asset.7c96797117ce1921adb2d1eb11eda9de631701bd55434439f808eaea244fe765
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  lambdaCreateEC2moduleManagedPolicy31A1781A:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - kms:Decrypt
+              - kms:Describe*
+              - kms:GenerateDataKey
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - s3kmskeyA0E45BCB
+                - Arn
+            Sid: KMSDecrypt
+          - Action: iam:PassRole
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - ec2instancemodulerole43B94AC9
+                - Arn
+            Sid: IAMPassRole
+          - Action:
+              - ec2:CreateNetworkInterface
+              - ec2:DeleteNetworkInterface
+              - ec2:Describe*
+              - ec2:RunInstances
+              - ec2:TerminateInstances
+            Effect: Allow
+            Resource: "*"
+            Sid: EC2Allow
+          - Action: ssm:SendCommand
+            Effect: Allow
+            Resource: "*"
+            Sid: SSMExecute
+        Version: "2012-10-17"
+      Description: Create EC2 Volatile Memory modules.
+      ManagedPolicyName: lambdaCreateEC2ModuleManagedPolicy
+      Path: /
+      Roles:
+        - Ref: lambdacreateec2modulerole5B4A6B11
+    Metadata:
+      aws:cdk:path: Ec2VolModules/lambdaCreateEC2moduleManagedPolicy/Resource
+  statemachinelogs6260145B:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Ref: cwstepfunctionlogsparameter
+      RetentionInDays: 365
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: Ec2VolModules/state_machine_logs/Resource
+  ec2volatilememorymodulesmachineRoleA56A2245:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                Fn::Join:
+                  - ""
+                  - - states.
+                    - Ref: AWS::Region
+                    - .amazonaws.com
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_volatile_memory_modules_machine/Role/Resource
+  ec2volatilememorymodulesmachineRoleDefaultPolicy6773C561:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: lambda:InvokeFunction
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - cleanupec2modulefunction8CAD29D4
+                  - Arn
+              - Fn::GetAtt:
+                  - createec2modulefunctionA90782EF
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - cleanupec2modulefunction8CAD29D4
+                        - Arn
+                    - :*
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - createec2modulefunctionA90782EF
+                        - Arn
+                    - :*
+        Version: "2012-10-17"
+      PolicyName: ec2volatilememorymodulesmachineRoleDefaultPolicy6773C561
+      Roles:
+        - Ref: ec2volatilememorymodulesmachineRoleA56A2245
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_volatile_memory_modules_machine/Role/DefaultPolicy/Resource
+  ec2volatilememorymodulesmachineA7638FBB:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn:
+        Fn::GetAtt:
+          - ec2volatilememorymodulesmachineRoleA56A2245
+          - Arn
+      DefinitionString:
+        Fn::Join:
+          - ""
+          - - '{"StartAt":"Create EC2 modules","States":{"Create EC2 modules":{"Next":"Cleanup EC2 Build Resources.","Retry":[{"ErrorEquals":["Lambda.ServiceException","Lambda.AWSLambdaException","Lambda.SdkClientException"],"IntervalSeconds":2,"MaxAttempts":6,"BackoffRate":2},{"ErrorEquals":["States.ALL"],"IntervalSeconds":10,"MaxAttempts":5,"BackoffRate":2}],"Type":"Task","Resource":"arn:'
+            - Ref: AWS::Partition
+            - :states:::lambda:invoke.waitForTaskToken","Parameters":{"FunctionName":"
+            - Fn::GetAtt:
+                - createec2modulefunctionA90782EF
+                - Arn
+            - '","Payload":{"token.$":"$$.Task.Token","input.$":"$"}}},"Cleanup EC2 Build Resources.":{"End":true,"Retry":[{"ErrorEquals":["Lambda.ServiceException","Lambda.AWSLambdaException","Lambda.SdkClientException"],"IntervalSeconds":2,"MaxAttempts":6,"BackoffRate":2}],"Type":"Task","InputPath":"$","OutputPath":"$","Resource":"arn:'
+            - Ref: AWS::Partition
+            - :states:::lambda:invoke","Parameters":{"FunctionName":"
+            - Fn::GetAtt:
+                - cleanupec2modulefunction8CAD29D4
+                - Arn
+            - '","Payload.$":"$"}}}}'
+      StateMachineName: create_ec2_volatile_memory_modules
+    DependsOn:
+      - ec2volatilememorymodulesmachineRoleDefaultPolicy6773C561
+      - ec2volatilememorymodulesmachineRoleA56A2245
+    Metadata:
+      aws:cdk:path: Ec2VolModules/ec2_volatile_memory_modules_machine/Resource
+Parameters:
+  cwstepfunctionlogsparameter:
+    Type: String
+    Default: /aws/statemachine/ec2
+    Description: The cloudwatch log group name for step function.
+  cwflowlogsparameter:
+    Type: String
+    Default: /aws/vpc/flowlogs
+    Description: The cloudwatch log group name for VPC flow logs AMI.
+  LambdaCodeSourceS3Bucket:
+    Type: String
+    Description: S3 bucket name where lambda code zip files are stored.
+  CreateEC2ModuleFunctionKey:
+    Type: String
+    Description: S3 key for lambda source code for the CreateEC2ModuleFunction.
+  CleanupEC2ResourceFunction:
+    Type: String
+    Description:  S3 key for lambda source code for the CleanupEC2ResourceFunction. 
+    

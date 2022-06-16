@@ -23,6 +23,15 @@ AWS Resources Include:
 Supported OS:
 - Amazon Linux 2
 
+Alternatively, you can deploy this solution using the CloudFormation template [ec2_module_factory_cfn](ec2_module_factory_cfn.yaml). You will need to download the lambda functions into a zip file and add the objects to a new or existing S3 bucket. Once added, you will need to pass the S3 bucket name and object keys (.zip files) in the CloudFormation parameters
+- LambdaCodeSourceS3Bucket
+- [CreateEC2ModuleFunctionKey](./ec2-forensic-module-factory//lambdas/create/create_modules.py)
+- [CleanupEC2ResourceFunction](./ec2-forensic-module-factory//lambdas/cleanup/cleanup.py)
+
+## Prerequisites
+
+AWS Systems Manager must be enabled in the AWS account.
+
 ## Build
 
 To build this app, you need to be in the project root folder. Then run the following:
@@ -31,10 +40,7 @@ To build this app, you need to be in the project root folder. Then run the follo
     <installs AWS CDK>
 
     $ npm install
-    <installs appropriate packages>
-
-    $ npm run build
-    <build TypeScript files>
+    <installs appropriate packages found in the package.json>
 
 ## Deploy
 
@@ -64,6 +70,12 @@ Example values:
     }
 
 Note: kernelversion is optional and only required if you are trying to build modules for a specific kernel version. If no value is provided, the default kernel version on the AMI-ID will be utilized.
+
+Example value without kernelversion:
+
+    {
+    "AMI_ID": "ami-0022f774911c1d690"
+    }
 
 ## CDK Toolkit
 
