@@ -43,6 +43,27 @@ def start_ec2_instance(AMI_ID):
         return InstanceId
     except Exception as exception_handle:
         logger.error(exception_handle)
+        try:
+            ec2instance = ec2.run_instances(
+                ImageId=AMI_ID,
+                InstanceType="c6g.medium",
+                MaxCount=1,
+                MinCount=1,
+                InstanceInitiatedShutdownBehavior='stop',
+                SecurityGroupIds=[
+                    SECURITY_GROUP_ID
+                ],
+                SubnetId=SUBNET_ID,
+                IamInstanceProfile={
+                    'Arn': INSTANCE_PROFILE
+                }
+            )
+            InstanceId = ec2instance['Instances'][0]['InstanceId']
+            logger.info('EC2 instance {} to build modules has successfully launched.'.format(InstanceId))
+            time.sleep(15)
+            return InstanceId
+        except Exception as exception_handle:
+            logger.error(exception_handle)
 
 def check_ec2_instance(InstanceId):
     """Function to check EC2 Instance status."""
