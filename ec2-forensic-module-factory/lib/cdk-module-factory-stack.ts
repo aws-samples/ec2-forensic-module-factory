@@ -395,7 +395,7 @@ export class Ec2VolModules extends Stack {
       timeout: Duration.seconds(900),
       memorySize: 1024,
       role: lambda_create_ec2_module_role,
-      //  reservedConcurrentExecutions: 20,
+      // reservedConcurrentExecutions: 20,
       environment:{
         S3_BUCKET: ec2_module_bucket.bucketName,
         KMS_KEY_ID: s3_kms_key.keyArn,
