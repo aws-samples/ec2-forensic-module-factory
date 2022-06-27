@@ -19,13 +19,20 @@ S3_BUCKET = os.environ['S3_BUCKET']
 SSM_DOC = os.environ['SSM_DOC']
 REGION = os.environ['REGION']
 
+def get_architecture(AMI_ID):
+    ami = ec2.describe_images(ImageIds=[AMI_ID])
+    architecture = ami['Images'][0]['Architecture']
+    logger.info('Architecture is {}'.format(architecture))
+    return architecture
+
 def start_ec2_instance(AMI_ID):
     """Function to launch the AMI Updater Instance."""
     logger.info('Launching EC2 instance using {} to create EC2 forensic modules...'.format(AMI_ID))
+    architecture = get_architecture(AMI_ID)
     try:
         ec2instance = ec2.run_instances(
             ImageId=AMI_ID,
-            InstanceType="t3.micro",
+            InstanceType="t3.micro" if architecture == 'x86_64' else 'c6g.medium',
             MaxCount=1,
             MinCount=1,
             InstanceInitiatedShutdownBehavior='stop',
@@ -43,27 +50,7 @@ def start_ec2_instance(AMI_ID):
         return InstanceId
     except Exception as exception_handle:
         logger.error(exception_handle)
-        try:
-            ec2instance = ec2.run_instances(
-                ImageId=AMI_ID,
-                InstanceType="c6g.medium",
-                MaxCount=1,
-                MinCount=1,
-                InstanceInitiatedShutdownBehavior='stop',
-                SecurityGroupIds=[
-                    SECURITY_GROUP_ID
-                ],
-                SubnetId=SUBNET_ID,
-                IamInstanceProfile={
-                    'Arn': INSTANCE_PROFILE
-                }
-            )
-            InstanceId = ec2instance['Instances'][0]['InstanceId']
-            logger.info('EC2 instance {} to build modules has successfully launched.'.format(InstanceId))
-            time.sleep(15)
-            return InstanceId
-        except Exception as exception_handle:
-            logger.error(exception_handle)
+
 
 def check_ec2_instance(InstanceId):
     """Function to check EC2 Instance status."""
