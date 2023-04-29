@@ -7,14 +7,17 @@ import { Function, Runtime, Code } from 'aws-cdk-lib/aws-lambda';
 import { join } from 'path';
 import { CfnDocument, StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Choice, Condition, Fail, StateMachine, Succeed, IntegrationPattern, JsonPath, TaskInput, LogLevel } from 'aws-cdk-lib/aws-stepfunctions';
-import { LambdaInvoke} from 'aws-cdk-lib/aws-stepfunctions-tasks';
+import { LambdaInvoke } from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs"; 
+import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 
 
 export class Ec2VolModules extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+
+    // Region from the AWS CDK CLI at the time of synthesis
+    const region: String = Stack.of(this).region;
 
     // KMS Key for S3 Bucket resources
     const s3_kms_key = new Key(this, 's3_kms_key', {
@@ -50,28 +53,35 @@ export class Ec2VolModules extends Stack {
       logGroupName: cw_vpc_flow_logs_parameter.valueAsString,
       removalPolicy: RemovalPolicy.DESTROY,
       retention: RetentionDays.ONE_YEAR
-      });
+    });
 
     const ec2_automation_vpc = new ec2.Vpc(this, 'ec2_automation_vpc', {
       natGateways: 1,
       cidr: '10.0.0.0/16',
       maxAzs: 2,
       subnetConfiguration: [
-        {cidrMask: 28,
-        name: 'maintenance_public_subnet',
-        subnetType: ec2.SubnetType.PUBLIC},
-        {cidrMask: 28,
-        name: 'maintenance_private_iso_subnet',
-        subnetType: ec2.SubnetType.PRIVATE_ISOLATED},
-        {cidrMask: 24,
-        name: 'maintenance_private_nat_subnet',
-        subnetType: ec2.SubnetType.PRIVATE_WITH_NAT},
+        {
+          cidrMask: 28,
+          name: 'maintenance_public_subnet',
+          subnetType: ec2.SubnetType.PUBLIC
+        },
+        {
+          cidrMask: 28,
+          name: 'maintenance_private_iso_subnet',
+          subnetType: ec2.SubnetType.PRIVATE_ISOLATED
+        },
+        {
+          cidrMask: 24,
+          name: 'maintenance_private_nat_subnet',
+          subnetType: ec2.SubnetType.PRIVATE_WITH_NAT
+        },
       ],
       flowLogs: {
         's3': {
           destination: ec2.FlowLogDestination.toCloudWatchLogs(cw_flow_logs),
           trafficType: ec2.FlowLogTrafficType.ALL,
-      }}
+        }
+      }
     });
 
     const ec2_workload_sg = new ec2.SecurityGroup(this, 'ec2_workload_sg', {
@@ -86,77 +96,77 @@ export class Ec2VolModules extends Stack {
     ec2_workload_sg.connections.allowTo(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), 'Allow HTTPS Outbound for Egress internet connectivity')
 
 
-    ec2_automation_vpc.addInterfaceEndpoint('ec2_endpoint',{
+    ec2_automation_vpc.addInterfaceEndpoint('ec2_endpoint', {
       service: ec2.InterfaceVpcEndpointAwsService.EC2,
       privateDnsEnabled: true,
       subnets: {
-         subnets: [
-          ec2_automation_vpc.selectSubnets({subnetGroupName: 'maintenance_private_nat_subnet'}).subnets[0]
-         ]
+        subnets: [
+          ec2_automation_vpc.selectSubnets({ subnetGroupName: 'maintenance_private_nat_subnet' }).subnets[0]
+        ]
       },
       securityGroups: (
         [ec2_workload_sg]
       )
     });
 
-    ec2_automation_vpc.addInterfaceEndpoint('ec2_msg_endpoint',{
+    ec2_automation_vpc.addInterfaceEndpoint('ec2_msg_endpoint', {
       service: ec2.InterfaceVpcEndpointAwsService.EC2_MESSAGES,
       privateDnsEnabled: true,
       subnets: {
-         subnets: [
-          ec2_automation_vpc.selectSubnets({subnetGroupName: 'maintenance_private_nat_subnet'}).subnets[0]
-         ]
+        subnets: [
+          ec2_automation_vpc.selectSubnets({ subnetGroupName: 'maintenance_private_nat_subnet' }).subnets[0]
+        ]
       },
       securityGroups: (
         [ec2_workload_sg]
       )
     });
 
-    ec2_automation_vpc.addInterfaceEndpoint('kms_endpoint',{
+    ec2_automation_vpc.addInterfaceEndpoint('kms_endpoint', {
       service: ec2.InterfaceVpcEndpointAwsService.KMS,
       privateDnsEnabled: true,
       subnets: {
-         subnets: [
-          ec2_automation_vpc.selectSubnets({subnetGroupName: 'maintenance_private_nat_subnet'}).subnets[0]
-         ]
+        subnets: [
+          ec2_automation_vpc.selectSubnets({ subnetGroupName: 'maintenance_private_nat_subnet' }).subnets[0]
+        ]
       },
       securityGroups: (
         [ec2_workload_sg]
       )
     });
 
-    ec2_automation_vpc.addInterfaceEndpoint('ssm_endpoint',{
+    ec2_automation_vpc.addInterfaceEndpoint('ssm_endpoint', {
       service: ec2.InterfaceVpcEndpointAwsService.SSM,
       privateDnsEnabled: true,
       subnets: {
-         subnets: [
-          ec2_automation_vpc.selectSubnets({subnetGroupName: 'maintenance_private_nat_subnet'}).subnets[0]
-         ]
+        subnets: [
+          ec2_automation_vpc.selectSubnets({ subnetGroupName: 'maintenance_private_nat_subnet' }).subnets[0]
+        ]
       },
       securityGroups: (
         [ec2_workload_sg]
       )
     });
 
-    ec2_automation_vpc.addInterfaceEndpoint('ssm_msg_endpoint',{
+    ec2_automation_vpc.addInterfaceEndpoint('ssm_msg_endpoint', {
       service: ec2.InterfaceVpcEndpointAwsService.SSM_MESSAGES,
       privateDnsEnabled: true,
       subnets: {
-         subnets: [
-          ec2_automation_vpc.selectSubnets({subnetGroupName: 'maintenance_private_nat_subnet'}).subnets[0]
-         ]
+        subnets: [
+          ec2_automation_vpc.selectSubnets({ subnetGroupName: 'maintenance_private_nat_subnet' }).subnets[0]
+        ]
       },
       securityGroups: (
         [ec2_workload_sg]
       )
     });
 
-    ec2_automation_vpc.addInterfaceEndpoint('s3_endpoint',{
-      service: new ec2.InterfaceVpcEndpointService('com.amazonaws.us-east-1.s3', 443),
+    ec2_automation_vpc.addInterfaceEndpoint('s3_endpoint', {
+      service: new ec2.InterfaceVpcEndpointService(`com.amazonaws.${region}.s3`, 443),
       subnets: {
-         subnets: [
-          ec2_automation_vpc.selectSubnets({subnetGroupName: 'maintenance_private_nat_subnet'}).subnets[0]
-         ]
+        subnets: [
+          ec2_automation_vpc.selectSubnets({ subnetGroupName: 'maintenance_private_nat_subnet' }).subnets[0]
+        ]
       },
       securityGroups: (
         [ec2_workload_sg]
@@ -177,10 +187,10 @@ export class Ec2VolModules extends Stack {
       lifecycleRules: [{
         expiration: Duration.days(365),
         transitions: [{
-            storageClass: StorageClass.GLACIER,
-            transitionAfter: Duration.days(31)
+          storageClass: StorageClass.GLACIER,
+          transitionAfter: Duration.days(31)
         }]
-    }]
+      }]
     });
 
 
@@ -194,18 +204,18 @@ export class Ec2VolModules extends Stack {
         "description": "Create modules for EC2 forensics and investigation.",
         "parameters": {
           "s3bucket": {
-              "type": "String",
-              "description": "(Required) S3 bucket details where modules are copied."
+            "type": "String",
+            "description": "(Required) S3 bucket details where modules are copied."
           },
           "kernelversion": {
             "type": "String",
             "description": "(Required) Kernel version to create modules for.",
             "default": "uname -r"
-        },
+          },
           "ExecutionTimeout": {
-              "type": "String",
-              "description": "(Required) SSM document execution timeout(seconds)",
-              "default": "4000"
+            "type": "String",
+            "description": "(Required) SSM document execution timeout(seconds)",
+            "default": "4000"
           },
           "Region": {
             "type": "String",
@@ -217,80 +227,80 @@ export class Ec2VolModules extends Stack {
             "description": "(Required) EC2 instance where module build occurs."
           },
           "TaskToken": {
-              "type": "String",
-              "description": "(Required) TaskToken from Step Function to complete task."
+            "type": "String",
+            "description": "(Required) TaskToken from Step Function to complete task."
           }
-      },
+        },
         "mainSteps": [
           {
-              "action": "aws:runShellScript",
-              "name": "createEC2kernelversion",
-              "precondition": {
-                  "StringEquals": ["platformType", "Linux"]
-              },
-              "inputs": {
-                  "timeoutSeconds": "{{ ExecutionTimeout }}",
-                  "runCommand": [
-                    // Get Kernel OS version
-                      "kernel_release={{ kernelversion }}",
-                      "#!/bin/bash",
-                      "sudo yum install $kernel_release -y",
-                    // Restart node if required
-                      "needs-restarting  -r",
-                      "if [ $? -eq 1 ]; then exit 194; fi",
-                      "sleep 120",
-                    // Prepare and Update EC2
-                      "kernel_release=$(uname -r)",
-                      "#!/bin/bash",
-                      "cd /tmp",
-                      "sudo yum install git -y",
-                      "if [ `rpm -qa|grep awscli|wc -l` -eq 0 ]; then yum -y install awscli; fi",
-                      "if [ `lsmod|grep lime|wc -l` -gt 0 ]; then rmmod lime; fi",
-                      "yum install git -y",
-                      "yum install python3 -y",
-                      "yum install pip -y",
-                    // Dependencies for Volatility2
-                      "sudo pip install pycrypto",
-                      "sudo pip install distorm3",
-                      "sudo yum install gcc -y",
-                      "sudo yum install libdwarf-tools -y",        
-                      //"sudo yum install kernel-devel-4.14.104-95.84.amzn2.x86_64 -y",          
-                      "sudo yum install kernel-devel-$kernel_release -y",          
-                    // LiME module creation
-                      "git clone https://github.com/504ensicsLabs/LiME",
-                      "sudo zip -r LiME.zip LiME",
-                      "cd LiME",
-                      "cd src",
-                      "sudo make",
-                      "aws configure set default.s3.max_concurrent_requests 20",
-                      "aws s3 cp /tmp/LiME/src/lime-$kernel_release.ko s3://{{ s3bucket }}/tools/LiME/",
-                      "echo LiME module creation completed for $kernel_release",
-                      "cd /tmp",
-                    // Volatility profile creation
-                      "git clone https://github.com/volatilityfoundation/volatility.git",
-                      "cd volatility/tools/linux",
-                      "sudo su",
-                      "sudo sed -i 's/PWD/shell pwd/g' /tmp/volatility/tools/linux/Makefile",
-                      "make",
-                      "sudo zip /tmp/volatility/volatility/plugins/overlays/linux/$kernel_release.zip /tmp/volatility/tools/linux/module.dwarf /boot/System.map-$kernel_release",
-                      "aws s3 cp /tmp/volatility/volatility/plugins/overlays/linux/$kernel_release.zip s3://{{ s3bucket }}/tools/vol2/",
-                      "echo Volatility2 profile creation completed for $kernel_release",
-                      "ls -ltr",
-                    // Send Step Function task token to end task
-                      'cat <<EOF >> ec2_module_steptoken.json',
-                      '{',
-                      '"taskToken":"{{ TaskToken }}",',
-                      '"output":"{\\"InstanceId\\": \\"{{ EC2InstanceId }}\\"}"',
-                      '}',
-                      'EOF',
-                      'aws stepfunctions send-task-success --cli-input-json file://ec2_module_steptoken.json --region {{ Region }}',                      
-                  ]
-              }
+            "action": "aws:runShellScript",
+            "name": "createEC2kernelversion",
+            "precondition": {
+              "StringEquals": ["platformType", "Linux"]
+            },
+            "inputs": {
+              "timeoutSeconds": "{{ ExecutionTimeout }}",
+              "runCommand": [
+                // Get Kernel OS version
+                "kernel_release={{ kernelversion }}",
+                "#!/bin/bash",
+                "sudo yum install $kernel_release -y",
+                // Restart node if required
+                "needs-restarting  -r",
+                "if [ $? -eq 1 ]; then exit 194; fi",
+                "sleep 120",
+                // Prepare and Update EC2
+                "kernel_release=$(uname -r)",
+                "#!/bin/bash",
+                "cd /tmp",
+                "sudo yum install git -y",
+                "if [ `rpm -qa|grep awscli|wc -l` -eq 0 ]; then yum -y install awscli; fi",
+                "if [ `lsmod|grep lime|wc -l` -gt 0 ]; then rmmod lime; fi",
+                "yum install git -y",
+                "yum install python3 -y",
+                "yum install pip -y",
+                // Dependencies for Volatility2
+                "sudo pip install pycrypto",
+                "sudo pip install distorm3",
+                "sudo yum install gcc -y",
+                "sudo yum install libdwarf-tools -y",
+                //"sudo yum install kernel-devel-4.14.104-95.84.amzn2.x86_64 -y",          
+                "sudo yum install kernel-devel-$kernel_release -y",
+                // LiME module creation
+                "git clone https://github.com/504ensicsLabs/LiME",
+                "sudo zip -r LiME.zip LiME",
+                "cd LiME",
+                "cd src",
+                "sudo make",
+                "aws configure set default.s3.max_concurrent_requests 20",
+                "aws s3 cp /tmp/LiME/src/lime-$kernel_release.ko s3://{{ s3bucket }}/tools/LiME/",
+                "echo LiME module creation completed for $kernel_release",
+                "cd /tmp",
+                // Volatility profile creation
+                "git clone https://github.com/volatilityfoundation/volatility.git",
+                "cd volatility/tools/linux",
+                "sudo su",
+                "sudo sed -i 's/PWD/shell pwd/g' /tmp/volatility/tools/linux/Makefile",
+                "make",
+                "sudo zip /tmp/volatility/volatility/plugins/overlays/linux/$kernel_release.zip /tmp/volatility/tools/linux/module.dwarf /boot/System.map-$kernel_release",
+                "aws s3 cp /tmp/volatility/volatility/plugins/overlays/linux/$kernel_release.zip s3://{{ s3bucket }}/tools/vol2/",
+                "echo Volatility2 profile creation completed for $kernel_release",
+                "ls -ltr",
+                // Send Step Function task token to end task
+                'cat <<EOF >> ec2_module_steptoken.json',
+                '{',
+                '"taskToken":"{{ TaskToken }}",',
+                '"output":"{\\"InstanceId\\": \\"{{ EC2InstanceId }}\\"}"',
+                '}',
+                'EOF',
+                'aws stepfunctions send-task-success --cli-input-json file://ec2_module_steptoken.json --region {{ Region }}',
+              ]
+            }
           }
-      ]
-      } 
+        ]
+      }
     });
-  
+
     // EC2 Launch Lambda Function Resources 
     const lambda_create_ec2_module_role = new iam.Role(this, 'lambda_create_ec2_module_role', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
@@ -327,7 +337,7 @@ export class Ec2VolModules extends Stack {
           ],
           resources: [
             s3_kms_key.keyArn
-          ]   
+          ]
         }),
         new iam.PolicyStatement({
           sid: "EC2Allow",
@@ -339,7 +349,7 @@ export class Ec2VolModules extends Stack {
           ],
           resources: [
             "*",
-          ]   
+          ]
         }),
         new iam.PolicyStatement({
           sid: "StepFunctionAllow",
@@ -349,14 +359,14 @@ export class Ec2VolModules extends Stack {
           ],
           resources: [
             "*",
-          ]   
+          ]
         }),
       ],
     });
 
     new iam.ManagedPolicy(this, 'EC2CreateModuleManagedPolicy', {
       description: 'EC2 Volatile Memory module instance profile.',
-      document:create_ec2_instance_profile_policy,
+      document: create_ec2_instance_profile_policy,
       managedPolicyName: 'EC2ModuleInstanceManagedPolicy',
       roles: [ec2_instance_module_role]
     });
@@ -370,21 +380,21 @@ export class Ec2VolModules extends Stack {
       memorySize: 1024,
       role: lambda_create_ec2_module_role,
       // reservedConcurrentExecutions: 20,
-      environment:{
+      environment: {
         S3_BUCKET: ec2_module_bucket.bucketName,
         KMS_KEY_ID: s3_kms_key.keyArn,
-        SECURITY_GROUP_ID:ec2_workload_sg.securityGroupId,
-        SUBNET_ID: ec2_automation_vpc.selectSubnets({subnetGroupName: 'maintenance_private_nat_subnet'}).subnetIds[0],
+        SECURITY_GROUP_ID: ec2_workload_sg.securityGroupId,
+        SUBNET_ID: ec2_automation_vpc.selectSubnets({ subnetGroupName: 'maintenance_private_nat_subnet' }).subnetIds[0],
         INSTANCE_PROFILE: ec2_instance_profile_role.attrArn,
         REGION: this.region,
         SSM_DOC: ssm_document_name
       },
-       vpc: ec2_automation_vpc,
-       securityGroups: [ec2_workload_sg],
-       vpcSubnets:
-       {
-         subnetType: ec2.SubnetType.PRIVATE_ISOLATED                                                                                                               
-       }
+      vpc: ec2_automation_vpc,
+      securityGroups: [ec2_workload_sg],
+      vpcSubnets:
+      {
+        subnetType: ec2.SubnetType.PRIVATE_ISOLATED
+      }
     });
 
     const cleanup_ec2_module_function = new Function(this, 'cleanup_ec2_module_function', {
@@ -396,21 +406,21 @@ export class Ec2VolModules extends Stack {
       memorySize: 1024,
       role: lambda_create_ec2_module_role,
       reservedConcurrentExecutions: 20,
-      environment:{
+      environment: {
         S3_BUCKET: ec2_module_bucket.bucketName,
         KMS_KEY_ID: s3_kms_key.keyArn,
-        SECURITY_GROUP_ID:ec2_workload_sg.securityGroupId,
-        SUBNET_ID: ec2_automation_vpc.selectSubnets({subnetGroupName: 'maintenance_private_nat_subnet'}).subnetIds[0],
+        SECURITY_GROUP_ID: ec2_workload_sg.securityGroupId,
+        SUBNET_ID: ec2_automation_vpc.selectSubnets({ subnetGroupName: 'maintenance_private_nat_subnet' }).subnetIds[0],
         INSTANCE_PROFILE: ec2_instance_profile_role.attrArn,
         REGION: this.region,
         SSM_DOC: ssm_document_name
       },
-       vpc: ec2_automation_vpc,
-       securityGroups: [ec2_workload_sg],
-       vpcSubnets:
-       {
-         subnetType: ec2.SubnetType.PRIVATE_ISOLATED                                                                                                               
-       }
+      vpc: ec2_automation_vpc,
+      securityGroups: [ec2_workload_sg],
+      vpcSubnets:
+      {
+        subnetType: ec2.SubnetType.PRIVATE_ISOLATED
+      }
     });
 
     const ec2_module_create = new LambdaInvoke(this, 'Create EC2 modules', {
@@ -434,7 +444,7 @@ export class Ec2VolModules extends Stack {
           ],
           resources: [
             s3_kms_key.keyArn
-          ]   
+          ]
         }),
         new iam.PolicyStatement({
           sid: "IAMPassRole",
@@ -444,7 +454,7 @@ export class Ec2VolModules extends Stack {
           ],
           resources: [
             ec2_instance_module_role.roleArn
-          ]   
+          ]
         }),
         new iam.PolicyStatement({
           sid: "EC2Allow",
@@ -458,7 +468,7 @@ export class Ec2VolModules extends Stack {
           ],
           resources: [
             "*",
-          ]   
+          ]
         }),
         new iam.PolicyStatement({
           sid: "SSMExecute",
@@ -468,14 +478,14 @@ export class Ec2VolModules extends Stack {
           ],
           resources: [
             "*"
-          ]   
+          ]
         })
       ],
     });
 
     new iam.ManagedPolicy(this, 'lambdaCreateEC2moduleManagedPolicy', {
       description: 'Create EC2 Volatile Memory modules.',
-      document:create_ec2_module_policy,
+      document: create_ec2_module_policy,
       managedPolicyName: 'lambdaCreateEC2ModuleManagedPolicy',
       roles: [lambda_create_ec2_module_role]
     });
@@ -504,7 +514,7 @@ export class Ec2VolModules extends Stack {
     })
 
     ec2_module_create.addRetry({
-      errors:['States.ALL'],
+      errors: ['States.ALL'],
       maxAttempts: 5,
       backoffRate: 2,
       interval: Duration.seconds(10),
@@ -516,13 +526,13 @@ export class Ec2VolModules extends Stack {
       outputPath: '$',
     })
 
-    const definition = 
-    ec2_module_create
-    .next(cleanup_ec2_module_task)
+    const definition =
+      ec2_module_create
+        .next(cleanup_ec2_module_task)
 
-    const state_machine_logs = new LogGroup(this, 'state_machine_logs',{
+    const state_machine_logs = new LogGroup(this, 'state_machine_logs', {
       logGroupName: cw_step_function_logs_parameter.valueAsString,
-//      encryptionKey: cw_kms_key,
+      //      encryptionKey: cw_kms_key,
       removalPolicy: RemovalPolicy.DESTROY,
       retention: RetentionDays.ONE_YEAR
     });
