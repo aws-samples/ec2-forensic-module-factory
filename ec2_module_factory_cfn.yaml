@@ -601,6 +601,11 @@ Resources:
           FromPort: 443
           IpProtocol: tcp
           ToPort: 443
+        - CidrIp: 0.0.0.0/0
+          Description: Allow HTTP Outbound for Egress internet connectivity
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
       SecurityGroupIngress:
         - CidrIp:
             Fn::GetAtt:
@@ -778,24 +783,34 @@ Resources:
               runCommand:
                 - kernel_release={{ kernelversion }}
                 - "#!/bin/bash"
-                - sudo yum install $kernel_release -y
+                - if [ -e /usr/bin/yum ]; then yum install $kernel_release -y; fi
                 - needs-restarting  -r
                 - if [ $? -eq 1 ]; then exit 194; fi
                 - sleep 120
                 - kernel_release=$(uname -r)
                 - "#!/bin/bash"
                 - cd /tmp
-                - sudo yum install git -y
+                - if [ -e /usr/bin/apt ]; then apt-get update -y; fi
+                - if [ -e /usr/bin/apt ]; then apt-get install git -y; fi
+                - if [ `dpkg -l|grep awscli|wc -l` -eq 0 ]; then DEBIAN_FRONTEND=noninteractive apt-get -y install unzip && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && ./aws/install; fi
+                - if [ -e /usr/bin/yum ]; then yum install git -y; fi
                 - if [ `rpm -qa|grep awscli|wc -l` -eq 0 ]; then yum -y install awscli; fi
                 - if [ `lsmod|grep lime|wc -l` -gt 0 ]; then rmmod lime; fi
-                - yum install git -y
-                - yum install python3 -y
-                - yum install pip -y
+                - if [ -e /usr/bin/apt ]; then apt-get install python3 -y; fi
+                - if [ -e /usr/bin/apt ]; then apt-get install pip -y; fi
+                - if [ -e /usr/bin/yum ]; then yum install python3 -y; fi
+                - if [ -e /usr/bin/yum ]; then yum install pip -y; fi
                 - sudo pip install pycrypto
                 - sudo pip install distorm3
-                - sudo yum install gcc -y
-                - sudo yum install libdwarf-tools -y
-                - sudo yum install kernel-devel-$kernel_release -y
+                - if [ -e /usr/bin/apt ]; then apt-get install gcc -y; fi
+                - if [ -e /usr/bin/apt ]; then apt-get install libdwarf-dev -y; fi
+                - if [ -e /usr/bin/apt ]; then apt-get install dwarves -y; fi
+                - if [ -e /usr/bin/apt ]; then apt-get install dwarfdump -y; fi
+                - if [ -e /usr/bin/apt ]; then apt-get install zip -y; fi
+                - if [ -e /usr/bin/apt ]; then cp /sys/kernel/btf/vmlinux /usr/lib/modules/`uname -r`/build/; fi              
+                - if [ -e /usr/bin/yum ]; then yum install gcc -y; fi
+                - if [ -e /usr/bin/yum ]; then yum install libdwarf-tools -y; fi
+                - if [ -e /usr/bin/yum ]; then yum install kernel-devel-$kernel_release -y; fi
                 - git clone https://github.com/504ensicsLabs/LiME
                 - sudo zip -r LiME.zip LiME
                 - cd LiME
@@ -809,6 +824,7 @@ Resources:
                 - cd volatility/tools/linux
                 - sudo su
                 - sudo sed -i 's/PWD/shell pwd/g' /tmp/volatility/tools/linux/Makefile
+                - if [ -e /usr/bin/apt ]; then echo 'MODULE_LICENSE("GPL");' >> module.c; fi
                 - make
                 - sudo zip /tmp/volatility/volatility/plugins/overlays/linux/$kernel_release.zip /tmp/volatility/tools/linux/module.dwarf /boot/System.map-$kernel_release
                 - aws s3 cp /tmp/volatility/volatility/plugins/overlays/linux/$kernel_release.zip s3://{{ s3bucket }}/tools/vol2/
